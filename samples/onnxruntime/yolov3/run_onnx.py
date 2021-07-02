@@ -54,7 +54,7 @@ def main():
     # Wheather enable graph optimization and choose optimization level
     sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
 
-    session = onnxruntime.InferenceSession("yolov3_b1.onnx", sess_options)
+    session = onnxruntime.InferenceSession("yolov3_int8.onnx", sess_options)
 
     inname = [input.name for input in session.get_inputs()]
     outname = [output.name for output in session.get_outputs()]
