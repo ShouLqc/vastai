@@ -34,6 +34,7 @@ def draw_bboxes(image_raw, bboxes, confidences, categories, all_categories, bbox
 
 def main():
     input_image_path = './dog.jpeg'
+    output_image_path = 'dog_bboxes.png'
     # Two-dimensional tuple with the target network's (spatial) input resolution in HW ordered
     input_resolution_yolov3_HW = (608, 608)
     # Create a pre-processor object by specifying the required input resolution for YOLOv3
@@ -46,15 +47,21 @@ def main():
     # Output shapes expected by the post-processor
     output_shapes = [(1, 255, 19, 19), (1, 255, 38, 38), (1, 255, 76, 76)]
 
-    sess_options = onnxruntime.RunOptions()
+    # Sess_options
+    sess_options = onnxruntime.SessionOptions()
+    # Wheather enable profiling 
+    sess_options.enable_profiling = True
+    # Wheather enable graph optimization and choose optimization level
+    sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
 
-    session = onnxruntime.InferenceSession("yolov3_optimized.onnx")
+    session = onnxruntime.InferenceSession("yolov3_b1.onnx", sess_options)
+
     inname = [input.name for input in session.get_inputs()]
     outname = [output.name for output in session.get_outputs()]
 
     print("inputs name:",inname,"outputs name:",outname)
 
-    outputs = session.run(outname, {inname[0]:image}, )
+    outputs = session.run(outname, {inname[0]:image})
 
     # Before doing post-processing, we need to reshape the outputs as the common.do_inference will give us flat arrays.
     trt_outputs = [output.reshape(shape) for output, shape in zip(outputs, output_shapes)]
@@ -72,7 +79,6 @@ def main():
     boxes, classes, scores = postprocessor.process(trt_outputs, (shape_orig_WH))
     # Draw the bounding boxes onto the original input image and save it as a PNG file
     obj_detected_img = draw_bboxes(image_raw, boxes, scores, classes, ALL_CATEGORIES)
-    output_image_path = 'dog_bboxes.png'
     obj_detected_img.save(output_image_path, 'PNG')
     print('Saved image with bounding boxes of detected objects to {}.'.format(output_image_path))
 
